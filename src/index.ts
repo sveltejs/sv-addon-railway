@@ -19,8 +19,10 @@ export default defineAddon({
 		.build(),
 	setup: ({ isKit, unsupported, runsAfter }) => {
 		if (!isKit) unsupported('Requires SvelteKit');
+		// runsAfter matches addon ids at runtime, but is typed with officialAddons keys
 		runsAfter('drizzle');
-		runsAfter('sveltekitAdapter');
+		runsAfter('better-auth' as 'betterAuth');
+		runsAfter('sveltekit-adapter' as 'sveltekitAdapter');
 	},
 	run: ({ sv, cwd, dependencyVersion, packageManager, options }) => {
 		// Railway runs a node server: force adapter-node
@@ -70,23 +72,35 @@ export default defineAddon({
 		const hasPostgres =
 			!!dependencyVersion('drizzle-orm') &&
 			(!!dependencyVersion('postgres') || !!dependencyVersion('pg'));
+		const hasBetterAuth = !!dependencyVersion('better-auth');
 
 		const projectName: string =
 			options.projectName || (loadPackageJson(cwd).data.name ?? 'svelte-railway-app');
 
-		const dbImport = hasPostgres ? ', postgres' : '';
+		const imports = ['defineRailway'];
+		if (hasPostgres) imports.push('postgres');
+		if (hasBetterAuth) imports.push('preserve');
+		imports.push('project', 'service');
+
+		const envEntries: string[] = [];
+		if (hasPostgres) envEntries.push('DATABASE_URL: db.env.DATABASE_URL');
+		// secrets stay out of the committed file: preserve() keeps the values set in Railway
+		if (hasBetterAuth) {
+			envEntries.push('BETTER_AUTH_SECRET: preserve()', 'ORIGIN: preserve()');
+		}
+
 		const dbDeclaration = hasPostgres ? `\tconst db = postgres('postgres');\n\n` : '';
-		const dbEnv = hasPostgres
-			? `,\n\t\tenv: {\n\t\t\tDATABASE_URL: db.env.DATABASE_URL\n\t\t}`
+		const env = envEntries.length
+			? `,\n\t\tenv: {\n${envEntries.map((e) => `\t\t\t${e}`).join(',\n')}\n\t\t}`
 			: '';
 		const dbResource = hasPostgres ? ', db' : '';
 
-		const railwayTs = `import { defineRailway, project, service${dbImport} } from 'railway/iac';
+		const railwayTs = `import { ${imports.join(', ')} } from 'railway/iac';
 
 export default defineRailway(() => {
 ${dbDeclaration}\tconst web = service('web', {
 		build: '${packageManager} run build',
-		start: 'node build'${dbEnv}
+		start: 'node build'${env}
 	});
 
 	return project('${projectName}', {
@@ -97,9 +111,11 @@ ${dbDeclaration}\tconst web = service('web', {
 
 		sv.file('.railway/railway.ts', () => railwayTs);
 	},
-	nextSteps: () => [
-		'railway login',
-		'railway link',
-		'railway config apply'
-	]
+	nextSteps: ({ dependencyVersion }) => {
+		const steps = ['railway login', 'railway link', 'railway config apply'];
+		if (dependencyVersion('better-auth')) {
+			steps.push('Set BETTER_AUTH_SECRET and ORIGIN on the web service in Railway');
+		}
+		return steps;
+	}
 });
