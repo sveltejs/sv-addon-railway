@@ -90,6 +90,8 @@ export default defineAddon({
 		}
 
 		const dbDeclaration = hasPostgres ? `\tconst db = postgres('postgres');\n\n` : '';
+		// push the drizzle schema before each deploy, so a fresh db is ready to serve
+		const preDeploy = hasPostgres ? `\n\t\tpreDeploy: '${packageManager} run db:push',` : '';
 		const env = envEntries.length
 			? `,\n\t\tenv: {\n${envEntries.map((e) => `\t\t\t${e}`).join(',\n')}\n\t\t}`
 			: '';
@@ -99,7 +101,7 @@ export default defineAddon({
 
 export default defineRailway(() => {
 ${dbDeclaration}\tconst web = service('web', {
-		build: '${packageManager} run build',
+		build: '${packageManager} run build',${preDeploy}
 		start: 'node build'${env}
 	});
 

@@ -5,6 +5,7 @@ export default defineRailway(() => {
 
 	const web = service('web', {
 		build: 'pnpm run build',
+		preDeploy: 'pnpm run db:push',
 		start: 'node build',
 		env: {
 			DATABASE_URL: db.env.DATABASE_URL,
