@@ -36,7 +36,7 @@ It backs the [svelte-kit template](https://railway.com/deploy/svelte-kit) on Rai
 Template config (set in the Railway template composer, not in this repo):
 
 - source: `sveltejs/sv-addon-railway`, root directory `/template-postgres`
-- config file path `/template-postgres/railway.json` (Railway only looks at the repo root by default)
+- pre-deploy command `pnpm run db:push --force` (the composer cannot read `template-postgres/railway.json`)
 - a `Postgres` database service
 - variables on the web service:
   - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`
