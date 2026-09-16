@@ -33,6 +33,9 @@ export default defineAddon({
 				for (const pkg of Object.keys(devDeps)) {
 					if (pkg.startsWith('@sveltejs/adapter-')) delete devDeps[pkg];
 				}
+				// Railpack needs a start script to detect the entrypoint
+				data['scripts'] ??= {};
+				data['scripts']['start'] = 'node build';
 			})
 		);
 		sv.devDependency(ADAPTER_NODE.package, ADAPTER_NODE.version);
@@ -90,8 +93,8 @@ export default defineAddon({
 		}
 
 		const dbDeclaration = hasPostgres ? `\tconst db = postgres('postgres');\n\n` : '';
-		// push the drizzle schema before each deploy, so a fresh db is ready to serve
-		const preDeploy = hasPostgres ? `\n\t\tpreDeploy: '${packageManager} run db:push',` : '';
+		// --force: strict drizzle config prompts for confirmation, there is no TTY on deploy
+		const preDeploy = hasPostgres ? `\n\t\tpreDeploy: '${packageManager} run db:push --force',` : '';
 		const env = envEntries.length
 			? `,\n\t\tenv: {\n${envEntries.map((e) => `\t\t\t${e}`).join(',\n')}\n\t\t}`
 			: '';
@@ -112,6 +115,18 @@ ${dbDeclaration}\tconst web = service('web', {
 `;
 
 		sv.file('.railway/railway.ts', () => railwayTs);
+
+		// GitHub/template deploys ignore the IaC file, railway.json carries the deploy config there
+		sv.file(
+			'railway.json',
+			transforms.json(({ data }) => {
+				data['$schema'] = 'https://railway.com/railway.schema.json';
+				data['build'] = { builder: 'RAILPACK' };
+				const deploy: Record<string, unknown> = { startCommand: 'node build' };
+				if (hasPostgres) deploy['preDeployCommand'] = [`${packageManager} run db:push --force`];
+				data['deploy'] = deploy;
+			})
+		);
 	},
 	nextSteps: ({ dependencyVersion }) => {
 		const steps = ['railway login', 'railway link', 'railway config apply'];

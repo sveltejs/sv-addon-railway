@@ -1,6 +1,8 @@
-# sv
+# Svelte & Railway starter
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/svelte-kit)
+
+SvelteKit + Drizzle (Postgres) + Better Auth, generated with [`sv`](https://github.com/sveltejs/cli) and the [railway add-on](../README.md). Deploys to Railway with one click, or via `railway config apply` (see `.railway/railway.ts`).
 
 ## Creating a project
 
@@ -15,7 +17,7 @@ To recreate this project with the same configuration:
 
 ```sh
 # recreate this project
-npx sv@0.17.0 create --template minimal --types ts --add drizzle="database:postgresql+postgresql:postgres.js+docker:yes" better-auth="demo:password" file:/home/jycouet/udev/gh/yved/jycouet_sv-addon-railway/poc="projectName:Svelte & Railway starter" --no-download-check --no-install snapshot
+pnpm dlx sv@0.17.0 create --template minimal --types ts --add drizzle="database:postgresql+postgresql:postgres.js+docker:yes" better-auth="demo:password" sv-addon-railway="projectName:Svelte & Railway starter" --no-download-check --install pnpm snapshot
 ```
 
 ## Developing
