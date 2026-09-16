@@ -15,6 +15,8 @@ npx sv@latest create template-postgres \
 cd template-postgres
 # the better-auth addon leaves a stub schema; the real one must be committed for the template
 pnpm auth:schema
+# Railpack defaults to pnpm 9, which rejects the generated pnpm-workspace.yaml
+pnpm pkg set packageManager=pnpm@$(pnpm -v)
 
 # README: no local path, and a deploy button on top
 sed -i "s|file:$(dirname "$(pwd)")=|sv-addon-railway=|" README.md
