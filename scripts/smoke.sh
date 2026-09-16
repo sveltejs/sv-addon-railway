@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# Regenerates ./snapshot: drizzle + better-auth + this addon.
-# snapshot/ is what the Railway template deploys (rootDirectory: /snapshot).
+# Regenerates ./template-postgres: drizzle + better-auth + this addon.
+# template-postgres/ is what the Railway template deploys (rootDirectory: /template-postgres).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-rm -rf snapshot
-npx sv@latest create snapshot \
+rm -rf template-postgres
+npx sv@latest create template-postgres \
 	--template minimal --types ts \
 	--add drizzle="database:postgresql+client:postgres.js+docker:yes" \
 	better-auth="demo:password" \
 	"file:$(pwd)"="projectName:Svelte & Railway starter" \
 	--install pnpm --no-download-check
 
-cd snapshot
+cd template-postgres
 # the better-auth addon leaves a stub schema; the real one must be committed for the template
 pnpm auth:schema
 
@@ -30,7 +30,7 @@ DATABASE_URL=postgres://build:build@localhost:5432/build BETTER_AUTH_SECRET=buil
 rm -rf build .svelte-kit node_modules
 
 echo
-echo "--- snapshot/.railway/railway.ts ---"
+echo "--- template-postgres/.railway/railway.ts ---"
 cat .railway/railway.ts
-echo "--- snapshot/railway.json ---"
+echo "--- template-postgres/railway.json ---"
 cat railway.json

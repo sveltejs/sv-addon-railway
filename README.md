@@ -30,25 +30,25 @@ npx sv add sv-addon-railway="projectName:My app"
 
 ## Template
 
-`snapshot/` is the generated reference app ("Svelte & Railway starter": drizzle + better-auth + this add-on).
+`template-postgres/` is the generated reference app ("Svelte & Railway starter": drizzle + better-auth + this add-on).
 It backs the [svelte-kit template](https://railway.com/deploy/svelte-kit) on Railway.
 
 Template config (set in the Railway template composer, not in this repo):
 
-- source: `sveltejs/sv-addon-railway`, root directory `/snapshot`
+- source: `sveltejs/sv-addon-railway`, root directory `/template-postgres`
 - a `Postgres` database service
 - variables on the web service:
   - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`
   - `BETTER_AUTH_SECRET` = `${{secret(32)}}`
   - `ORIGIN` = `https://${{RAILWAY_PUBLIC_DOMAIN}}`
 
-Start / pre-deploy commands come from `snapshot/railway.json`.
+Start / pre-deploy commands come from `template-postgres/railway.json`.
 
 ## Development
 
 ```bash
 pnpm install
-pnpm smoke # builds the add-on, regenerates ./snapshot with sv@latest, builds it
+pnpm smoke # builds the add-on, regenerates ./template-postgres with sv@latest, builds it
 ```
 
-Commit the regenerated `snapshot/` to update the template.
+Commit the regenerated `template-postgres/` to update the template.
