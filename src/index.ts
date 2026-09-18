@@ -103,7 +103,7 @@ export default defineAddon({
 		const railwayTs = `import { ${imports.join(', ')} } from 'railway/iac';
 
 export default defineRailway(() => {
-${dbDeclaration}\tconst web = service('web', {
+${dbDeclaration}\tconst web = service('SvelteKit', {
 		build: '${packageManager} run build',${preDeploy}
 		start: 'node build'${env}
 	});
