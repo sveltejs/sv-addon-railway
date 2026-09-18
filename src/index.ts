@@ -87,16 +87,16 @@ export default defineAddon({
 
 		const envEntries: string[] = [];
 		if (hasPostgres) envEntries.push('DATABASE_URL: db.env.DATABASE_URL');
-		// secrets stay out of the committed file: preserve() keeps the values set in Railway
-		if (hasBetterAuth) {
-			envEntries.push('BETTER_AUTH_SECRET: preserve()', 'ORIGIN: preserve()');
-		}
+		// adapter-node needs ORIGIN to trust the proxy; Railway resolves the ${{...}} reference
+		envEntries.push("ORIGIN: 'https://${{RAILWAY_PUBLIC_DOMAIN}}'");
+		// secrets stay out of the committed file: preserve() keeps the value set in Railway
+		if (hasBetterAuth) envEntries.push('BETTER_AUTH_SECRET: preserve()');
 
 		const dbDeclaration = hasPostgres ? `\tconst db = postgres('Postgres');\n\n` : '';
 		// --force: strict drizzle config prompts for confirmation, there is no TTY on deploy
 		const preDeploy = hasPostgres ? `\n\t\tpreDeploy: '${packageManager} run db:push --force',` : '';
 		const env = envEntries.length
-			? `,\n\t\tenv: {\n${envEntries.map((e) => `\t\t\t${e}`).join(',\n')}\n\t\t}`
+			? `\n\t\tenv: {\n${envEntries.map((e) => `\t\t\t${e}`).join(',\n')}\n\t\t},`
 			: '';
 		const dbResource = hasPostgres ? ', db' : '';
 
@@ -105,7 +105,12 @@ export default defineAddon({
 export default defineRailway(() => {
 ${dbDeclaration}\tconst web = service('SvelteKit', {
 		build: '${packageManager} run build',${preDeploy}
-		start: 'node build'${env}
+		start: 'node build',${env}
+		// sleeps when idle, so it fits a free plan
+		deploy: {
+			healthcheckPath: '/',
+			sleepApplication: true
+		}
 	});
 
 	return project('${projectName}', {
@@ -115,23 +120,11 @@ ${dbDeclaration}\tconst web = service('SvelteKit', {
 `;
 
 		sv.file('.railway/railway.ts', () => railwayTs);
-
-		// GitHub/template deploys ignore the IaC file, railway.json carries the deploy config there
-		sv.file(
-			'railway.json',
-			transforms.json(({ data }) => {
-				data['$schema'] = 'https://railway.com/railway.schema.json';
-				data['build'] = { builder: 'RAILPACK' };
-				const deploy: Record<string, unknown> = { startCommand: 'node build' };
-				if (hasPostgres) deploy['preDeployCommand'] = [`${packageManager} run db:push --force`];
-				data['deploy'] = deploy;
-			})
-		);
 	},
 	nextSteps: ({ dependencyVersion }) => {
 		const steps = ['railway login', 'railway link', 'railway config apply'];
 		if (dependencyVersion('better-auth')) {
-			steps.push('Set BETTER_AUTH_SECRET and ORIGIN on the web service in Railway');
+			steps.push('Set BETTER_AUTH_SECRET on the SvelteKit service in Railway');
 		}
 		return steps;
 	}
