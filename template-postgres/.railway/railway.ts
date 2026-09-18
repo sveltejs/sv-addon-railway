@@ -1,16 +1,21 @@
 import { defineRailway, postgres, preserve, project, service } from 'railway/iac';
 
 export default defineRailway(() => {
-	const db = postgres('postgres');
+	const db = postgres('Postgres');
 
-	const web = service('web', {
+	const web = service('SvelteKit', {
 		build: 'pnpm run build',
 		preDeploy: 'pnpm run db:push --force',
 		start: 'node build',
 		env: {
 			DATABASE_URL: db.env.DATABASE_URL,
-			BETTER_AUTH_SECRET: preserve(),
-			ORIGIN: preserve()
+			ORIGIN: 'https://${{RAILWAY_PUBLIC_DOMAIN}}',
+			BETTER_AUTH_SECRET: preserve()
+		},
+		// sleeps when idle, so it fits a free plan
+		deploy: {
+			healthcheckPath: '/',
+			sleepApplication: true
 		}
 	});
 
