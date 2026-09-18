@@ -92,7 +92,7 @@ export default defineAddon({
 			envEntries.push('BETTER_AUTH_SECRET: preserve()', 'ORIGIN: preserve()');
 		}
 
-		const dbDeclaration = hasPostgres ? `\tconst db = postgres('postgres');\n\n` : '';
+		const dbDeclaration = hasPostgres ? `\tconst db = postgres('Postgres');\n\n` : '';
 		// --force: strict drizzle config prompts for confirmation, there is no TTY on deploy
 		const preDeploy = hasPostgres ? `\n\t\tpreDeploy: '${packageManager} run db:push --force',` : '';
 		const env = envEntries.length
