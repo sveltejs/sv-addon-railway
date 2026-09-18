@@ -11,7 +11,7 @@ npx sv@latest create template-postgres \
 	--template minimal --types ts \
 	--add drizzle="database:postgresql+client:postgres.js+docker:yes" \
 	better-auth="demo:password" \
-	"file:$root"="projectName:Svelte & Railway starter" \
+	"file:$root"="projectName:Svelte & Railway starter+enableStyle:yes" \
 	--install pnpm --no-download-check
 
 cd template-postgres
@@ -26,9 +26,6 @@ pnpm pkg set packageManager=pnpm@$(npm view pnpm dist-tags.latest-10)
 	echo
 	sed -e "s|file:$root=|sv-addon-railway=|" -e '1,/^## /{/^## /!d}' README.md
 } > README.next && mv README.next README.md
-
-# the demo is what the template shows off, so link it from the landing page
-echo '<p><a href="/demo/better-auth">better-auth demo</a></p>' >> src/routes/+page.svelte
 
 # sanity: build like Railway does (env vars are provided by the template at build time)
 DATABASE_URL=postgres://build:build@localhost:5432/build BETTER_AUTH_SECRET=build pnpm build

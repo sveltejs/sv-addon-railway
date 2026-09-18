@@ -16,6 +16,7 @@ What it does:
 - switches the app to `@sveltejs/adapter-node` and adds a `start` script (`node build`)
 - writes `.railway/railway.ts` ([Infrastructure as Code](https://docs.railway.com/infrastructure-as-code), applied by `railway config apply`): a `SvelteKit` service that sleeps when idle, plus a `Postgres` database with `DATABASE_URL` wiring and a `db:push` pre-deploy when drizzle + postgres are detected
 - adds the `railway` package for the `railway/iac` types
+- with `enableStyle` (default), styles the app and turns the landing page into a deployment status page (Postgres reachable, Railway domain, link to the auth demo)
 
 `adapter-node` needs `ORIGIN` to build absolute URLs behind Railway's proxy, so the service sets
 it to `https://${{RAILWAY_PUBLIC_DOMAIN}}` - the domain Railway assigns, resolved on their side.
@@ -28,13 +29,18 @@ get their config from the template instead.
 
 ## Options
 
-| option        | default          | description          |
-| ------------- | ---------------- | -------------------- |
-| `projectName` | the package name | Railway project name |
+| option        | default          | description                                       |
+| ------------- | ---------------- | ------------------------------------------------- |
+| `projectName` | the package name | Railway project name                              |
+| `enableStyle` | `true`           | style the app + deployment status landing page    |
 
 ```bash
-npx sv add sv-addon-railway="projectName:My app"
+npx sv add sv-addon-railway="projectName:My app+enableStyle:no"
 ```
+
+`enableStyle` writes `src/routes/layout.css` (the `sv` demo palette, no extra dependency) and a
+shell in `+layout.svelte`. It only replaces the landing page while it is still the scaffolded
+"Welcome to SvelteKit" one, so it never overwrites your work.
 
 ## Template
 

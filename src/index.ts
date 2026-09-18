@@ -1,5 +1,6 @@
 import { type AstTypes, loadPackageJson, svelteConfig, transforms } from '@sveltejs/sv-utils';
 import { defineAddon, defineAddonOptions } from 'sv';
+import { LAYOUT_CSS, layoutSvelte, statusPage, statusPageServer } from './style.js';
 
 const ADAPTER_NODE = { package: '@sveltejs/adapter-node', version: '^5.5.4' };
 const RAILWAY_VERSION = '^3.11.0';
@@ -16,6 +17,11 @@ export default defineAddon({
 			placeholder: 'defaults to the package name',
 			required: false
 		})
+		.add('enableStyle', {
+			type: 'boolean',
+			question: 'Style the app and show a deployment status page?',
+			default: true
+		})
 		.build(),
 	setup: ({ isKit, unsupported, runsAfter }) => {
 		if (!isKit) unsupported('Requires SvelteKit');
@@ -24,7 +30,7 @@ export default defineAddon({
 		runsAfter('better-auth' as 'betterAuth');
 		runsAfter('sveltekit-adapter' as 'sveltekitAdapter');
 	},
-	run: ({ sv, cwd, dependencyVersion, packageManager, options }) => {
+	run: ({ sv, cwd, dependencyVersion, packageManager, options, language, directory }) => {
 		// Railway runs a node server: force adapter-node
 		sv.file(
 			'package.json',
@@ -120,6 +126,29 @@ ${dbDeclaration}\tconst web = service('SvelteKit', {
 `;
 
 		sv.file('.railway/railway.ts', () => railwayTs);
+
+		if (options.enableStyle) {
+			const routes = directory.kitRoutes;
+			sv.file(`${routes}/layout.css`, () => LAYOUT_CSS);
+
+			sv.file(`${routes}/+layout.svelte`, (content) =>
+				content.includes('./layout.css')
+					? content
+					: layoutSvelte({ language, hasFavicon: content.includes('favicon') })
+			);
+
+			// only the scaffolded landing page is ours to replace
+			sv.file(`${routes}/+page.svelte`, (content) =>
+				content.includes('Welcome to SvelteKit') || content.trim() === ''
+					? statusPage({ language, hasPostgres, hasBetterAuth })
+					: content
+			);
+			if (hasPostgres) {
+				sv.file(`${routes}/+page.server.${language}`, (content) =>
+					content.trim() === '' ? statusPageServer(hasBetterAuth) : content
+				);
+			}
+		}
 	},
 	nextSteps: ({ dependencyVersion }) => {
 		const steps = ['railway login', 'railway link', 'railway config apply'];
