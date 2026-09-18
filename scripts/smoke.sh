@@ -1,17 +1,36 @@
 #!/usr/bin/env bash
-# Smoke test: scaffold an app with drizzle + better-auth + this addon.
-# The generated app in ./snapshot is what gets pushed to kit-template-railway.
+# Regenerates ./template-postgres: drizzle + better-auth + this addon.
+# template-postgres/ is what the Railway template deploys (rootDirectory: /template-postgres).
+# Everything here must be reproducible: never hand-edit template-postgres/.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+root=$(pwd)
 
-rm -rf snapshot
-npx sv@latest create snapshot \
+rm -rf template-postgres
+npx sv@latest create template-postgres \
 	--template minimal --types ts \
 	--add drizzle="database:postgresql+client:postgres.js+docker:yes" \
 	better-auth="demo:password" \
-	"file:$(pwd)"="projectName:Svelte & Railway starter" \
-	--no-install --no-download-check
+	"file:$root"="projectName:Svelte & Railway starter+enableStyle:yes" \
+	--install pnpm --no-download-check
+
+cd template-postgres
+# the better-auth addon leaves a stub schema; the real one must be committed for the template
+pnpm auth:schema
+# Railpack defaults to pnpm 9 (rejects the generated workspace file); 11+ breaks onlyBuiltDependencies
+pnpm pkg set packageManager=pnpm@$(npm view pnpm dist-tags.latest-10)
+
+# README: template title + deploy button, then the `sv` sections, with no local add-on path
+{
+	cat "$root/scripts/template-readme-header.md"
+	echo
+	sed -e "s|file:$root=|sv-addon-railway=|" -e '1,/^## /{/^## /!d}' README.md
+} > README.next && mv README.next README.md
+
+# sanity: build like Railway does (env vars are provided by the template at build time)
+DATABASE_URL=postgres://build:build@localhost:5432/build BETTER_AUTH_SECRET=build pnpm build
+rm -rf build .svelte-kit node_modules
 
 echo
-echo "--- snapshot/.railway/railway.ts ---"
-cat snapshot/.railway/railway.ts
+echo "--- template-postgres/.railway/railway.ts ---"
+cat .railway/railway.ts

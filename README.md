@@ -1,8 +1,9 @@
 # sv-addon-railway
 
-Community [Svelte CLI](https://svelte.dev/docs/cli) add-on that writes Railway
-[Infrastructure as Code](https://docs.railway.com/infrastructure-as-code) (`.railway/railway.ts`)
-based on the other add-ons you selected.
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/svelte-kit)
+
+Community [Svelte CLI](https://svelte.dev/docs/cli) add-on that makes a SvelteKit app deployable
+on [Railway](https://railway.com), based on the other add-ons you selected.
 
 ```bash
 npx sv create my-app --add drizzle better-auth sv-addon-railway
@@ -12,26 +13,57 @@ railway login && railway link && railway config apply
 
 What it does:
 
-- writes `.railway/railway.ts` (a `web` service, plus a `postgres` database with `DATABASE_URL` wiring when drizzle + postgres are detected)
-- switches the app to `@sveltejs/adapter-node`
+- switches the app to `@sveltejs/adapter-node` and adds a `start` script (`node build`)
+- writes `.railway/railway.ts` ([Infrastructure as Code](https://docs.railway.com/infrastructure-as-code), applied by `railway config apply`): a `SvelteKit` service that sleeps when idle, plus a `Postgres` database with `DATABASE_URL` wiring and a `db:push` pre-deploy when drizzle + postgres are detected
 - adds the `railway` package for the `railway/iac` types
+- with `enableStyle` (default), styles the app and turns the landing page into a deployment status page (Postgres reachable, Railway domain, link to the auth demo)
+
+`adapter-node` needs `ORIGIN` to build absolute URLs behind Railway's proxy, so the service sets
+it to `https://${{RAILWAY_PUBLIC_DOMAIN}}` - the domain Railway assigns, resolved on their side.
+Secrets like `BETTER_AUTH_SECRET` use `preserve()`: the value you set in Railway stays, and never
+lands in the repo.
+
+[`railway.json`](https://docs.railway.com/config-as-code) is deliberately not written: it stops
+working at the end of the year, and deploys that ignore the IaC file (GitHub or template deploys)
+get their config from the template instead.
 
 ## Options
 
-| option        | default          | description                     |
-| ------------- | ---------------- | ------------------------------- |
-| `projectName` | the package name | Railway project name            |
+| option        | default          | description                                       |
+| ------------- | ---------------- | ------------------------------------------------- |
+| `projectName` | the package name | Railway project name                              |
+| `enableStyle` | `true`           | style the app + deployment status landing page    |
 
 ```bash
-npx sv add sv-addon-railway="projectName:My app"
+npx sv add sv-addon-railway="projectName:My app+enableStyle:no"
 ```
+
+`enableStyle` writes `src/routes/layout.css` (the `sv` demo palette, no extra dependency) and a
+shell in `+layout.svelte`. It only replaces the landing page while it is still the scaffolded
+"Welcome to SvelteKit" one, so it never overwrites your work.
+
+## Template
+
+`template-postgres/` is the generated reference app ("Svelte & Railway starter": drizzle + better-auth + this add-on).
+It backs the [svelte-kit template](https://railway.com/deploy/svelte-kit) on Railway.
+
+Template config (set in the Railway template composer, since a template deploy never runs
+`.railway/railway.ts` - it must mirror that file):
+
+- source: `sveltejs/sv-addon-railway`, root directory `/template-postgres`
+- a `Postgres` database service
+- on the `SvelteKit` service:
+  - start command `node build`
+  - pre-deploy command `pnpm run db:push --force`
+  - serverless (app sleeping) enabled, healthcheck path `/`
+  - variables: `DATABASE_URL` = `${{Postgres.DATABASE_URL}}`, `ORIGIN` = `https://${{RAILWAY_PUBLIC_DOMAIN}}`, `BETTER_AUTH_SECRET` = `${{secret(32)}}`
+
 
 ## Development
 
 ```bash
 pnpm install
-pnpm smoke # builds, then scaffolds ./snapshot with drizzle + better-auth + this addon
+pnpm smoke # builds the add-on, regenerates ./template-postgres with sv@latest, builds it
 ```
 
-`snapshot/` is the generated reference app ("Svelte & Railway starter") - the same output is
-meant to be pushed to [kit-template-railway](https://github.com/sveltejs/kit-template-railway).
+Commit the regenerated `template-postgres/` to update the template.

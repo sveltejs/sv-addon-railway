@@ -1,40 +1,40 @@
 {
-	"name": "sv-addon-railway",
-	"version": "0.0.1",
-	"type": "module",
-	"description": "Svelte CLI add-on that writes Railway Infrastructure as Code (.railway/railway.ts)",
-	"license": "MIT",
-	"repository": "github:jycouet/sv-addon-railway",
-	"keywords": [
-		"sv-add",
-		"svelte",
-		"sveltekit",
-		"railway",
-		"iac"
-	],
-	"exports": {
-		".": {
-			"types": "./dist/index.d.mts",
-			"default": "./dist/index.mjs"
-		}
-	},
-	"files": [
-		"dist"
-	],
-	"scripts": {
-		"build": "tsdown",
-		"check": "tsc --noEmit",
-		"smoke": "pnpm build && ./scripts/smoke.sh"
-	},
-	"peerDependencies": {
-		"sv": "^0.17.0"
-	},
-	"devDependencies": {
-		"@sveltejs/sv-utils": "^0.3.3",
-		"@types/estree": "^1.0.9",
-		"sv": "^0.17.0",
-		"tsdown": "^0.22.14",
-		"typescript": "^5.9.2"
-	},
-	"packageManager": "pnpm@10.11.0"
+  "name": "sv-addon-railway",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Svelte CLI add-on that writes Railway Infrastructure as Code (.railway/railway.ts)",
+  "license": "MIT",
+  "repository": "github:sveltejs/sv-addon-railway",
+  "keywords": [
+    "sv-add",
+    "svelte",
+    "sveltekit",
+    "railway",
+    "iac"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "check": "tsc --noEmit",
+    "smoke": "pnpm build && ./scripts/smoke.sh"
+  },
+  "peerDependencies": {
+    "sv": "^0.17.0"
+  },
+  "devDependencies": {
+    "@sveltejs/sv-utils": "^0.3.3",
+    "@types/estree": "^1.0.9",
+    "sv": "^0.17.0",
+    "tsdown": "^0.22.14",
+    "typescript": "^5.9.2"
+  },
+  "packageManager": "pnpm@10.11.0"
 }
