@@ -1,3 +1,4 @@
 node_modules
 dist
+tmp
 template-postgres/node_modules

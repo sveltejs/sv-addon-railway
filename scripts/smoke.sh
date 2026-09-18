@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 # Regenerates ./template-postgres: drizzle + better-auth + this addon.
 # template-postgres/ is what the Railway template deploys (rootDirectory: /template-postgres).
+# Everything here must be reproducible: never hand-edit template-postgres/.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+root=$(pwd)
 
 rm -rf template-postgres
 npx sv@latest create template-postgres \
 	--template minimal --types ts \
 	--add drizzle="database:postgresql+client:postgres.js+docker:yes" \
 	better-auth="demo:password" \
-	"file:$(pwd)"="projectName:Svelte & Railway starter" \
+	"file:$root"="projectName:Svelte & Railway starter" \
 	--install pnpm --no-download-check
 
 cd template-postgres
@@ -18,14 +20,15 @@ pnpm auth:schema
 # Railpack defaults to pnpm 9 (rejects the generated workspace file); 11+ breaks onlyBuiltDependencies
 pnpm pkg set packageManager=pnpm@$(npm view pnpm dist-tags.latest-10)
 
-# README: no local path, and a deploy button on top
-sed -i "s|file:$(dirname "$(pwd)")=|sv-addon-railway=|" README.md
-sed -i '1,3c\
-# Svelte \& Railway starter\
-\
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/svelte-kit)\
-\
-SvelteKit + Drizzle (Postgres) + Better Auth, generated with [`sv`](https://github.com/sveltejs/cli) and the [railway add-on](../README.md). Deploys to Railway with one click, or via `railway config apply` (see `.railway/railway.ts`).' README.md
+# README: template title + deploy button, then the `sv` sections, with no local add-on path
+{
+	cat "$root/scripts/template-readme-header.md"
+	echo
+	sed -e "s|file:$root=|sv-addon-railway=|" -e '1,/^## /{/^## /!d}' README.md
+} > README.next && mv README.next README.md
+
+# the demo is what the template shows off, so link it from the landing page
+echo '<p><a href="/demo/better-auth">better-auth demo</a></p>' >> src/routes/+page.svelte
 
 # sanity: build like Railway does (env vars are provided by the template at build time)
 DATABASE_URL=postgres://build:build@localhost:5432/build BETTER_AUTH_SECRET=build pnpm build
@@ -34,5 +37,3 @@ rm -rf build .svelte-kit node_modules
 echo
 echo "--- template-postgres/.railway/railway.ts ---"
 cat .railway/railway.ts
-echo "--- template-postgres/railway.json ---"
-cat railway.json
