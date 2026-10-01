@@ -252,7 +252,7 @@ export function statusPage(options: {
 	const props = options.hasPostgres
 		? options.language === 'ts'
 			? "\timport type { PageProps } from './$types';\n\n\tlet { data }: PageProps = $props();\n"
-			: '\t/** @import(\'./$types\').PageProps */\nlet { data } = $props();\n'
+			: '\t/** @import(\'./$types\').PageProps */\n\tlet { data } = $props();\n'
 		: '';
 	const script = props ? `<script${lang}>\n${props}</script>\n\n` : '';
 
