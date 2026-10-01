@@ -218,7 +218,7 @@ export function statusPageServer(hasBetterAuth: boolean): string {
 		: '';
 	const authReturn = hasBetterAuth ? '\n\t\tauth,' : '';
 
-	return `import { env } from '$env/dynamic/private';
+	return `import { RAILWAY_PUBLIC_DOMAIN, RAILWAY_GIT_COMMIT_SHA } from '$app/env/private';
 import { sql } from 'drizzle-orm';
 import { db } from '#lib/server/db';
 ${authImport}
@@ -235,8 +235,8 @@ ${auth}
 	return {
 		database,${authReturn}
 		railway: {
-			domain: env.RAILWAY_PUBLIC_DOMAIN ?? null,
-			commit: env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? null
+			domain: RAILWAY_PUBLIC_DOMAIN ?? null,
+			commit: RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? null
 		}
 	};
 };
@@ -251,8 +251,8 @@ export function statusPage(options: {
 	const lang = options.language === 'ts' ? ' lang="ts"' : '';
 	const props = options.hasPostgres
 		? options.language === 'ts'
-			? "\timport type { PageServerData } from './$types';\n\n\tlet { data }: { data: PageServerData } = $props();\n"
-			: '\tlet { data } = $props();\n'
+			? "\timport type { PageProps } from './$types';\n\n\tlet { data }: PageProps = $props();\n"
+			: '\t/** @import(\'./$types\').PageProps */\nlet { data } = $props();\n'
 		: '';
 	const script = props ? `<script${lang}>\n${props}</script>\n\n` : '';
 
@@ -400,5 +400,38 @@ ${rows}	</ul>
 		margin-bottom: 0.2rem;
 	}
 </style>
+`;
+}
+
+export function envFile(): string {
+	return `import { defineEnvVars } from '@sveltejs/kit/env';
+import { building } from '$app/env';
+
+function buildOnly(value) {
+	if (!value && building) throw new Error('Missing required build-time environment variable');
+	return value;
+}
+
+function optional(value) {
+  return value;
+}
+
+export const variables = defineEnvVars({
+	BETTER_AUTH_SECRET: {
+		schema: buildOnly
+	},
+	DATABASE_URL: {
+		schema: buildOnly
+	},
+	ORIGIN: {
+		schema: buildOnly
+	},
+	RAILWAY_PUBLIC_DOMAIN: {
+		schema: optional
+	},
+	RAILWAY_GIT_COMMIT_SHA: {
+		schema: optional
+	}
+});
 `;
 }

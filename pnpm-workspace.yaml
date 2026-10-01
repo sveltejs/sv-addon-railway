@@ -1,0 +1,5 @@
+minimumReleaseAgeExclude:
+  - sv
+  - "@sveltejs/*"
+allowBuilds:
+  esbuild: true

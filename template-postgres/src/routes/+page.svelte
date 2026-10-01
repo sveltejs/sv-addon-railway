@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { PageServerData } from './$types';
+	import type { PageProps } from './$types';
 
-	let { data }: { data: PageServerData } = $props();
+	let { data }: PageProps = $props();
 </script>
 
 <svelte:head>

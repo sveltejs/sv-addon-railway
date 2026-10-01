@@ -1,8 +1,8 @@
 import { type AstTypes, loadPackageJson, svelteConfig, transforms } from '@sveltejs/sv-utils';
 import { defineAddon, defineAddonOptions } from 'sv';
-import { LAYOUT_CSS, layoutSvelte, statusPage, statusPageServer } from './style.js';
+import { envFile, LAYOUT_CSS, layoutSvelte, statusPage, statusPageServer } from './style.js';
 
-const ADAPTER_NODE = { package: '@sveltejs/adapter-node', version: '^5.5.4' };
+const ADAPTER_NODE = { package: '@sveltejs/adapter-node', version: '^6.0.0' };
 const RAILWAY_VERSION = '^3.11.0';
 
 export default defineAddon({
@@ -73,6 +73,14 @@ export default defineAddon({
 				{ adapter: js.functions.createCall({ name: adapterName, args: [], useIdentifiers: true }) },
 				{ dropLeadingComments: ['adapter'] }
 			);
+
+			override({
+				paths: {
+					origin: js.common.parseExpression(
+						'process.env.RAILWAY_PUBLIC_DOMAIN ? "https://" + process.env.RAILWAY_PUBLIC_DOMAIN : undefined'
+					)
+				}
+			});
 		});
 
 		// `railway` package provides the `railway/iac` types
@@ -82,6 +90,8 @@ export default defineAddon({
 			!!dependencyVersion('drizzle-orm') &&
 			(!!dependencyVersion('postgres') || !!dependencyVersion('pg'));
 		const hasBetterAuth = !!dependencyVersion('better-auth');
+
+		if (hasBetterAuth) sv.file('src/env.ts', () => envFile());
 
 		const projectName: string =
 			options.projectName || (loadPackageJson(cwd).data.name ?? 'svelte-railway-app');

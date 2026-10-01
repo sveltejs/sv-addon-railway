@@ -1,8 +1,6 @@
-# Svelte & Railway starter
+# sv
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/svelte-kit)
-
-SvelteKit + Drizzle (Postgres) + Better Auth, generated with [`sv`](https://github.com/sveltejs/cli) and the [railway add-on](../README.md). Deploys to Railway with one click, or via `railway config apply` (see `.railway/railway.ts`).
+Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
 
 ## Creating a project
 
@@ -17,7 +15,21 @@ To recreate this project with the same configuration:
 
 ```sh
 # recreate this project
-pnpm dlx sv@0.17.0 create --template minimal --types ts --add drizzle="database:postgresql+postgresql:postgres.js+docker:yes" better-auth="demo:password" sv-addon-railway="projectName:Svelte & Railway starter+enableStyle:yes" --no-download-check --install pnpm template-postgres
+pnpm dlx sv@1.0.1 create --template minimal --types ts --add drizzle="database:postgresql+postgresql:postgres.js+docker:yes" better-auth="demo:password" file:/Users/teeming/git/sveltejs/sv-addon-railway="projectName:Svelte & Railway starter+enableStyle:yes" --no-download-check --install pnpm template-postgres
+```
+
+## Adding features
+
+Add features to your project with `sv add`:
+
+```sh
+npx sv add
+```
+
+For example, to add Tailwind CSS:
+
+```sh
+npx sv add tailwindcss
 ```
 
 ## Developing
