@@ -13,13 +13,15 @@ railway login && railway link && railway config apply
 
 What it does:
 
-- switches the app to `@sveltejs/adapter-node` and adds a `start` script (`node build`)
+- switches the app to `@sveltejs/adapter-node` (v6 on SvelteKit 3, v5 on SvelteKit 2) and adds a `start` script (`node build`)
 - writes `.railway/railway.ts` ([Infrastructure as Code](https://docs.railway.com/infrastructure-as-code), applied by `railway config apply`): a `SvelteKit` service that sleeps when idle, plus a `Postgres` database with `DATABASE_URL` wiring and a `db:push` pre-deploy when drizzle + postgres are detected
 - adds the `railway` package for the `railway/iac` types
 - with `enableStyle` (default), styles the app and turns the landing page into a deployment status page (Postgres reachable, Railway domain, link to the auth demo)
 
-`adapter-node` needs `ORIGIN` to build absolute URLs behind Railway's proxy, so the service sets
-it to `https://${{RAILWAY_PUBLIC_DOMAIN}}` - the domain Railway assigns, resolved on their side.
+On SvelteKit 3, `adapter-node` derives the origin from `https` + the `Host` header, which works
+behind Railway's proxy (custom domains included). On SvelteKit 2, or when Better Auth is present
+(it reads `ORIGIN` as its base URL), the service sets `ORIGIN` to `https://${{RAILWAY_PUBLIC_DOMAIN}}` -
+the domain Railway assigns, resolved on their side.
 Secrets like `BETTER_AUTH_SECRET` use `preserve()`: the value you set in Railway stays, and never
 lands in the repo.
 

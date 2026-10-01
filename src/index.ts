@@ -1,8 +1,18 @@
-import { type AstTypes, defineEnv, loadPackageJson, svelteConfig, transforms } from '@sveltejs/sv-utils';
+import {
+	type AstTypes,
+	defineEnv,
+	isKit3,
+	loadPackageJson,
+	resolveLibPrefix,
+	svelteConfig,
+	transforms
+} from '@sveltejs/sv-utils';
 import { defineAddon, defineAddonOptions } from 'sv';
 import { LAYOUT_CSS, layoutSvelte, statusPage, statusPageServer } from './style.js';
 
-const ADAPTER_NODE = { package: '@sveltejs/adapter-node', version: '^6.0.0' };
+const ADAPTER_NODE = '@sveltejs/adapter-node';
+// adapter-node 6 requires kit 3
+const ADAPTER_NODE_VERSION = { kit2: '^5.5.4', kit3: '^6.0.0' };
 const RAILWAY_VERSION = '^3.11.0';
 
 export default defineAddon({
@@ -31,6 +41,9 @@ export default defineAddon({
 		runsAfter('sveltekit-adapter' as 'sveltekitAdapter');
 	},
 	run: ({ sv, cwd, dependencyVersion, packageManager, options, language, directory }) => {
+		const kitRange = dependencyVersion('@sveltejs/kit');
+		const kit3 = isKit3(kitRange);
+
 		// Railway runs a node server: force adapter-node
 		sv.file(
 			'package.json',
@@ -44,7 +57,7 @@ export default defineAddon({
 				data['scripts']['start'] = 'node build';
 			})
 		);
-		sv.devDependency(ADAPTER_NODE.package, ADAPTER_NODE.version);
+		sv.devDependency(ADAPTER_NODE, kit3 ? ADAPTER_NODE_VERSION.kit3 : ADAPTER_NODE_VERSION.kit2);
 
 		svelteConfig.edit({ sv, cwd }, ({ ast, override, js }) => {
 			const imports = ast.body.filter(
@@ -59,28 +72,20 @@ export default defineAddon({
 
 			let adapterName = 'adapter';
 			if (adapterImport) {
-				adapterImport.source.value = ADAPTER_NODE.package;
+				adapterImport.source.value = ADAPTER_NODE;
 				adapterImport.source.raw = undefined;
 				const defaultSpecifier = adapterImport.specifiers?.find(
 					(s): s is AstTypes.ImportDefaultSpecifier => s.type === 'ImportDefaultSpecifier'
 				);
 				adapterName = defaultSpecifier!.local.name;
 			} else {
-				js.imports.addDefault(ast, { from: ADAPTER_NODE.package, as: adapterName });
+				js.imports.addDefault(ast, { from: ADAPTER_NODE, as: adapterName });
 			}
 
 			override(
 				{ adapter: js.functions.createCall({ name: adapterName, args: [], useIdentifiers: true }) },
 				{ dropLeadingComments: ['adapter'] }
 			);
-
-			override({
-				paths: {
-					origin: js.common.parseExpression(
-						'process.env.RAILWAY_PUBLIC_DOMAIN ? "https://" + process.env.RAILWAY_PUBLIC_DOMAIN : undefined'
-					)
-				}
-			});
 		});
 
 		// `railway` package provides the `railway/iac` types
@@ -145,8 +150,10 @@ export default defineAddon({
 
 		const envEntries: string[] = [];
 		if (hasPostgres) envEntries.push('DATABASE_URL: db.env.DATABASE_URL');
-		// adapter-node needs ORIGIN to trust the proxy; Railway resolves the ${{...}} reference
-		envEntries.push("ORIGIN: 'https://${{RAILWAY_PUBLIC_DOMAIN}}'");
+		// adapter-node 5 and better-auth read ORIGIN at runtime; Railway resolves the ${{...}} reference.
+		// adapter-node 6 defaults to https + Host header, so a build-time `paths.origin` isn't needed
+		// (and would pin the app to the Railway domain, breaking custom domains)
+		if (!kit3 || hasBetterAuth) envEntries.push("ORIGIN: 'https://${{RAILWAY_PUBLIC_DOMAIN}}'");
 		// secrets stay out of the committed file: preserve() keeps the value set in Railway
 		if (hasBetterAuth) envEntries.push('BETTER_AUTH_SECRET: preserve()');
 
@@ -197,7 +204,14 @@ ${dbDeclaration}\tconst web = service('SvelteKit', {
 			);
 			if (hasPostgres) {
 				sv.file(`${routes}/+page.server.${language}`, (content) =>
-					content.trim() === '' ? statusPageServer(hasBetterAuth) : content
+					content.trim() === ''
+						? statusPageServer({
+								hasBetterAuth,
+								lib: resolveLibPrefix(kitRange),
+								language,
+								declaredEnv: environment.mode === 'declared'
+							})
+						: content
 				);
 			}
 		}
