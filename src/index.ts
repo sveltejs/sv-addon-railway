@@ -1,6 +1,6 @@
-import { type AstTypes, loadPackageJson, svelteConfig, transforms } from '@sveltejs/sv-utils';
+import { type AstTypes, defineEnv, loadPackageJson, svelteConfig, transforms } from '@sveltejs/sv-utils';
 import { defineAddon, defineAddonOptions } from 'sv';
-import { envFile, LAYOUT_CSS, layoutSvelte, statusPage, statusPageServer } from './style.js';
+import { LAYOUT_CSS, layoutSvelte, statusPage, statusPageServer } from './style.js';
 
 const ADAPTER_NODE = { package: '@sveltejs/adapter-node', version: '^6.0.0' };
 const RAILWAY_VERSION = '^3.11.0';
@@ -91,7 +91,49 @@ export default defineAddon({
 			(!!dependencyVersion('postgres') || !!dependencyVersion('pg'));
 		const hasBetterAuth = !!dependencyVersion('better-auth');
 
-		if (hasBetterAuth) sv.file('src/env.ts', () => envFile());
+		const environment = defineEnv({ sv, cwd, dependencyVersion });
+		const railwayVariables = [
+			{
+				name: 'RAILWAY_PUBLIC_DOMAIN',
+				description: 'Public domain assigned by Railway, shown on the deployment status page. Optional outside Railway.'
+			},
+			{
+				name: 'RAILWAY_GIT_COMMIT_SHA',
+				description: 'Git commit SHA deployed by Railway, shown on the deployment status page. Optional outside Railway.'
+			}
+		];
+		for (const variable of railwayVariables) environment.define(variable);
+
+		// define() does not support schemas yet. Railway metadata is absent locally.
+		if (environment.mode === 'declared') {
+			sv.file(
+				`src/env.${language}`,
+				transforms.script(({ ast, js }) => {
+					for (const node of ast.body) {
+						if (node.type !== 'ExportNamedDeclaration') continue;
+						if (node.declaration?.type !== 'VariableDeclaration') continue;
+						const variable = node.declaration.declarations.find(
+							(d) => d.id.type === 'Identifier' && d.id.name === 'variables'
+						);
+						const values = variable?.init;
+						if (values?.type !== 'CallExpression') continue;
+						const definitions = values.arguments[0];
+						if (definitions?.type !== 'ObjectExpression') continue;
+						for (const { name } of railwayVariables) {
+							const entry = js.object.property(definitions, {
+								name,
+								fallback: js.object.create({})
+							});
+							if (entry.type !== 'ObjectExpression') continue;
+							js.object.property(entry, {
+								name: 'schema',
+								fallback: js.common.parseExpression('(value) => value')
+							});
+						}
+					}
+				})
+			);
+		}
 
 		const projectName: string =
 			options.projectName || (loadPackageJson(cwd).data.name ?? 'svelte-railway-app');

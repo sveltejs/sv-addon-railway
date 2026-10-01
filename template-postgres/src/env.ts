@@ -1,29 +1,19 @@
 import { defineEnvVars } from '@sveltejs/kit/env';
-import { building } from '$app/env';
-
-function buildOnly(value) {
-	if (!value && building) throw new Error('Missing required build-time environment variable');
-	return value;
-}
-
-function optional(value) {
-  return value;
-}
 
 export const variables = defineEnvVars({
-	BETTER_AUTH_SECRET: {
-		schema: buildOnly
-	},
-	DATABASE_URL: {
-		schema: buildOnly
-	},
+	DATABASE_URL: { description: 'The database connection string.' },
 	ORIGIN: {
-		schema: buildOnly
+		description: 'The app origin (base URL), e.g. `http://localhost:5173`.'
+	},
+	BETTER_AUTH_SECRET: {
+		description: 'Secret used to sign tokens. For production use 32 characters generated with high entropy. See [Better Auth installation](https://www.better-auth.com/docs/installation).'
 	},
 	RAILWAY_PUBLIC_DOMAIN: {
-		schema: optional
+		description: 'Public domain assigned by Railway, shown on the deployment status page. Optional outside Railway.',
+		schema: (value) => value
 	},
 	RAILWAY_GIT_COMMIT_SHA: {
-		schema: optional
+		description: 'Git commit SHA deployed by Railway, shown on the deployment status page. Optional outside Railway.',
+		schema: (value) => value
 	}
 });
