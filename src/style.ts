@@ -114,7 +114,7 @@ form {
 export function layoutSvelte(options: { language: 'ts' | 'js'; hasFavicon: boolean }): string {
 	const lang = options.language === 'ts' ? ' lang="ts"' : '';
 	const favicon = options.hasFavicon
-		? "\timport favicon from '$lib/assets/favicon.svg';\n"
+		? "\timport favicon from '#lib/assets/favicon.svg';\n"
 		: '';
 	const faviconHead = options.hasFavicon
 		? '<svelte:head>\n\t<link rel="icon" href={favicon} />\n</svelte:head>\n\n'
@@ -204,7 +204,7 @@ ${faviconHead}<div class="app">
 
 /** Proves the deploy wired itself up: database reachable, schema pushed, domain known. */
 export function statusPageServer(hasBetterAuth: boolean): string {
-	const authImport = hasBetterAuth ? "import { user } from '$lib/server/db/auth.schema';\n" : '';
+	const authImport = hasBetterAuth ? "import { user } from '#lib/server/db/auth.schema';\n" : '';
 	const auth = hasBetterAuth
 		? `
 	let auth;
@@ -220,7 +220,7 @@ export function statusPageServer(hasBetterAuth: boolean): string {
 
 	return `import { env } from '$env/dynamic/private';
 import { sql } from 'drizzle-orm';
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db';
 ${authImport}
 export const load = async () => {
 	let database;
