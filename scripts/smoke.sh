@@ -6,6 +6,12 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 root=$(pwd)
 
+# sv derives the template's @types/node from the running Node major
+if [ "$(node -p 'process.versions.node.split(".")[0]')" != 24 ]; then
+	echo "smoke: run with Node 24 (got $(node -v))" >&2
+	exit 1
+fi
+
 rm -rf template-postgres
 npx -y sv@latest create template-postgres \
 	--template minimal --types ts \
@@ -24,11 +30,15 @@ pnpm pkg set packageManager=pnpm@$(npm view pnpm dist-tags.latest-10)
 {
 	cat "$root/scripts/template-readme-header.md"
 	echo
-	sed -e "s|file:$root=|sv-addon-railway=|" -e '1,/^## /{/^## /!d}' README.md
+	sed -e "s|file:$root=|sv-addon-railway=|" -e '1,/^## /{/^## /!d;}' README.md
 } > README.next && mv README.next README.md
+if grep -q "file:" README.md; then
+	echo "smoke: local add-on path leaked into README.md" >&2
+	exit 1
+fi
 
 # sanity: build like Railway does (env vars are provided by the template at build time)
-DATABASE_URL=postgres://build:build@localhost:5432/build BETTER_AUTH_SECRET=build pnpm build
+DATABASE_URL=postgres://build:build@localhost:5432/build BETTER_AUTH_SECRET=build ORIGIN=https://build.local pnpm build
 rm -rf build .svelte-kit node_modules
 
 echo
