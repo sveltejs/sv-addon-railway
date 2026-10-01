@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 root=$(pwd)
 
 rm -rf template-postgres
-npx sv@latest create template-postgres \
+pnpx sv@latest create template-postgres \
 	--template minimal --types ts \
 	--add drizzle="database:postgresql+client:postgres.js+docker:yes" \
 	better-auth="demo:password" \
