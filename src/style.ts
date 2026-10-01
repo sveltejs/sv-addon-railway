@@ -203,8 +203,22 @@ ${faviconHead}<div class="app">
 }
 
 /** Proves the deploy wired itself up: database reachable, schema pushed, domain known. */
-export function statusPageServer(hasBetterAuth: boolean): string {
-	const authImport = hasBetterAuth ? "import { user } from '#lib/server/db/auth.schema';\n" : '';
+export function statusPageServer(options: {
+	hasBetterAuth: boolean;
+	lib: '#lib' | '$lib';
+	language: 'ts' | 'js';
+	/** `$app/env/private` (kit 3) vs `$env/dynamic/private` (kit 2). */
+	declaredEnv: boolean;
+}): string {
+	const { hasBetterAuth, lib, language, declaredEnv } = options;
+	const dbDir = `${lib}/server/db`;
+	const authImport = hasBetterAuth
+		? `import { user } from '${dbDir}/auth.schema.${language}';\n`
+		: '';
+	const envImport = declaredEnv
+		? "import { RAILWAY_GIT_COMMIT_SHA, RAILWAY_PUBLIC_DOMAIN } from '$app/env/private';"
+		: "import { env } from '$env/dynamic/private';";
+	const envRef = (name: string) => (declaredEnv ? name : `env.${name}`);
 	const auth = hasBetterAuth
 		? `
 	let auth;
@@ -218,9 +232,9 @@ export function statusPageServer(hasBetterAuth: boolean): string {
 		: '';
 	const authReturn = hasBetterAuth ? '\n\t\tauth,' : '';
 
-	return `import { env } from '$env/dynamic/private';
+	return `${envImport}
 import { sql } from 'drizzle-orm';
-import { db } from '#lib/server/db';
+import { db } from '${dbDir}/index.${language}';
 ${authImport}
 export const load = async () => {
 	let database;
@@ -235,8 +249,8 @@ ${auth}
 	return {
 		database,${authReturn}
 		railway: {
-			domain: env.RAILWAY_PUBLIC_DOMAIN ?? null,
-			commit: env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? null
+			domain: ${envRef('RAILWAY_PUBLIC_DOMAIN')} ?? null,
+			commit: ${envRef('RAILWAY_GIT_COMMIT_SHA')}?.slice(0, 7) ?? null
 		}
 	};
 };
@@ -251,8 +265,8 @@ export function statusPage(options: {
 	const lang = options.language === 'ts' ? ' lang="ts"' : '';
 	const props = options.hasPostgres
 		? options.language === 'ts'
-			? "\timport type { PageServerData } from './$types';\n\n\tlet { data }: { data: PageServerData } = $props();\n"
-			: '\tlet { data } = $props();\n'
+			? "\timport type { PageProps } from './$types';\n\n\tlet { data }: PageProps = $props();\n"
+			: "\t/** @type {import('./$types').PageProps} */\n\tlet { data } = $props();\n"
 		: '';
 	const script = props ? `<script${lang}>\n${props}</script>\n\n` : '';
 

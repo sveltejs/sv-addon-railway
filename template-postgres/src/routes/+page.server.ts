@@ -1,7 +1,7 @@
-import { env } from '$env/dynamic/private';
+import { RAILWAY_GIT_COMMIT_SHA, RAILWAY_PUBLIC_DOMAIN } from '$app/env/private';
 import { sql } from 'drizzle-orm';
-import { db } from '$lib/server/db';
-import { user } from '$lib/server/db/auth.schema';
+import { db } from '#lib/server/db/index.ts';
+import { user } from '#lib/server/db/auth.schema.ts';
 
 export const load = async () => {
 	let database;
@@ -25,8 +25,8 @@ export const load = async () => {
 		database,
 		auth,
 		railway: {
-			domain: env.RAILWAY_PUBLIC_DOMAIN ?? null,
-			commit: env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? null
+			domain: RAILWAY_PUBLIC_DOMAIN ?? null,
+			commit: RAILWAY_GIT_COMMIT_SHA?.slice(0, 7) ?? null
 		}
 	};
 };
