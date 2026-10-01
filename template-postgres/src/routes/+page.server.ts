@@ -1,7 +1,7 @@
-import { RAILWAY_PUBLIC_DOMAIN, RAILWAY_GIT_COMMIT_SHA } from '$app/env/private';
+import { RAILWAY_GIT_COMMIT_SHA, RAILWAY_PUBLIC_DOMAIN } from '$app/env/private';
 import { sql } from 'drizzle-orm';
-import { db } from '#lib/server/db';
-import { user } from '#lib/server/db/auth.schema';
+import { db } from '#lib/server/db/index.ts';
+import { user } from '#lib/server/db/auth.schema.ts';
 
 export const load = async () => {
 	let database;

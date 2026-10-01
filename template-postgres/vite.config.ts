@@ -10,12 +10,7 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			adapter: adapter(),
-			paths: {
-				origin: process.env.RAILWAY_PUBLIC_DOMAIN
-					? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN
-					: undefined
-			}
+			adapter: adapter()
 		})
 	]
 });
